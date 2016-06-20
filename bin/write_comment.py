@@ -4,12 +4,18 @@ sys.path.append('..')
 import os
 from utils import myutils
 
-greeting_path = "../data/greeting"
-greeting_list = myutils.read_line_to_list(greeting_path)
+#greeting_path = "../data/greeting"
+#greeting_list = myutils.read_line_to_list(greeting_path)
+#comment = "{greeting}"
 
 
 
 
 
-comment = "{greeting}"
+
+
+
+
+
+
 
