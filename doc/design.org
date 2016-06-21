@@ -1,0 +1,11 @@
+*  功能
+** 自动写创意文字
+
+
+*  流程
+** url 数据采集
+** title 爬取
+** title 切词
+** word embedding
+
+
