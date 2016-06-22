@@ -1,13 +1,19 @@
-#coding=utf-8
+# -*- coding: utf-8 -*-
 import sys
 sys.path.append('..')
 import os
 import jieba
 from utils import myutils
+import gensim
+import numpy as np
+from gensim.corpora import WikiCorpus
+from gensim.models import Word2Vec
+from gensim.models.word2vec import LineSentence
+import multiprocessing
+import random
 
-#greeting_path = "../data/greeting"
-#greeting_list = myutils.read_line_to_list(greeting_path)
-#comment = "{greeting}"
+
+#myutils.set_ipython_encoding_utf8()
 
 def get_url():
     """
@@ -42,21 +48,24 @@ def seg_zh_line(zh_line, method='jieba'):
     Returns:
     segged Chinese word list
     """
+    try:
+        zh_stop_words = open('../data/stop-words/zh_cn.txt').read().splitlines()
 
-    zh_stop_words = 'stop-words/zh_cn.txt'
-    stop_words = [ line.strip().decode('utf-8') for line in open(zh_stop_words).readlines() ]
-    jieba.enable_parallel(8)
+        stop_words = [ line.strip().decode('utf-8') for line in zh_stop_words ]
 
-    zh_line = zh_line.decode('utf8')
-    zh_line = zh_line.strip()
+        #jieba.enable_parallel(8)
+        zh_line = zh_line.decode('utf8')
+        zh_line = zh_line.strip()
 
-    seg_list = jieba.cut(zh_line, cut_all=False)
-    res = " ".join(set(seg_list) - set(stop_words))
+        seg_list = jieba.cut(zh_line, cut_all=False)
+        res = " ".join(set(seg_list) - set(stop_words))
 
-    return res
+        return res
+    except AttributeError, attr:
+        print zh_line
+        return ""
 
-
-def train_word_embedding_model(doc_list, method='word2vec'):
+def train_word2vec_model(doc_list):
     """
     doc_list:
     each doc is a word list
@@ -68,8 +77,62 @@ def train_word_embedding_model(doc_list, method='word2vec'):
     word embedding model
 
     """
-    pass
+    inp = '../data/wordlist'
+    model_path = "../data/word2vec_model"
+    vector_path = "../data/word2vec_vector"
 
+    model = Word2Vec(LineSentence(inp), size=400, window=5, min_count=5,
+                     workers=multiprocessing.cpu_count())
+
+    model.save(model_path, ignore=[])
+    model.save_word2vec_format(vector_path, binary=True)
+    return model
+
+
+def load_word2vec_model(model):
+    """
+
+    """
+    embed_data_path = "../data/embed_dat"
+    embed_vocab_path = "../data/embed_vocab"
+    vector_model_path = "../data/user_vector"
+
+    if os.path.exists(embed_data_path):
+        os.remove(embed_data_path)
+
+    if os.path.exists(embed_vocab_path):
+        os.remove(embed_vocab_path)
+
+    if not os.path.exists(embed_data_path):
+        print("Caching word embeddings in memmapped format...")
+
+        wv = Word2Vec.load_word2vec_format(vector_model_path,  binary=True)
+
+        print "wv syn0norm shape : " + str(wv.syn0norm.shape)
+        fp = np.memmap(embed_data_path, dtype= np.double, mode='w+', shape=wv.syn0norm.shape)
+        fp[:] = wv.syn0norm[:]
+        with open(embed_vocab_path, "w") as f:
+            for _, w in sorted((voc.index, word) for word, voc in wv.vocab.items()):
+                f.write(w + "\n")
+
+        del fp, wv
+
+
+def get_sim_words(word, model):
+
+    try:
+        ret = model.most_similar(word.decode('utf8'))
+
+    except Exception, e:
+
+        print e
+        return ret
+
+    res = []
+    for item in ret:
+        res.append(item[0].encode('utf8'))
+
+    return res
 
 def mapping_word_class(word, class_dict):
     """
@@ -86,16 +149,48 @@ def mapping_word_class(word, class_dict):
     pass
 
 
+
+def write_comment():
+
+    greeting_list = open("../data/en/greeting").read().splitlines()
+    person_list = open("../data/en/person").read().splitlines()
+    adjective_list = open("../data/en/adjective").read().splitlines()
+    product_list = open("../data/en/product").read().splitlines()
+    ending_list = open("../data/en/ending").read().splitlines()
+    #person = open("../data/person").read().splitlines()
+    en_comment_format = "{greeting} {person} ! Look at this {adjective} {product}, {ending}"
+
+    for i in xrange(10):
+        print en_comment_format.format(greeting=random.choice(greeting_list),
+                                       person=random.choice(person_list),
+                                       adjective=random.choice(adjective_list),
+                                       product=random.choice(product_list),
+                                       ending=random.choice(ending_list))
+
+
+
+
 if __name__ == '__main__':
 
-    url_path = get_url()
-    title_list = scrapy_title(url_path)
+    #seed_word = ""
 
-    seg_list = []
-    for title in title_list:
-        seg_list.append(seg_zh_line(title))
+    #url_path = get_url()
+    #title_list = scrapy_title(url_path)
+
+    # seg_list = []
+    # for title in title_list:
+    #     seg_list.append(seg_zh_line(title))
+
+    crawled_title_json_list = myutils.parse_json_file("../data/out.json")
+    # filte all item where title is None 
+    title_json_list = [ title_json for title_json in crawled_title_json_list if title_json['title'] is not None ]
+
+    for index, crawled_title in enumerate(title_json_list):
+        crawled_title.update({'seg': seg_zh_line(crawled_title['title'])})
 
 
-    embedding_model = train_word_embedding_model(seg_list)
+    embed_model = train_word2vec_model(seg_list)
+    vector_file = "../data/all_vector"
+    model = gensim.models.Word2Vec.load_word2vec_format(vector_file, binary=False)
 
-
+    sim_words = get_sim_words(word, model)

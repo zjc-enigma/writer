@@ -1,11 +1,35 @@
-*  功能
+*  文字创意
 ** 自动写创意文字
 
 
 *  流程
-** url 数据采集
-** title 爬取
-** title 切词
-** word embedding
+** DONE url 数据采集
+CLOSED: [2016-06-22 Wed 15:45]
+** DONE title 爬取
+CLOSED: [2016-06-22 Wed 15:45]
+** DONE title 切词
+CLOSED: [2016-06-22 Wed 15:46]
+** DONE word embedding
+CLOSED: [2016-06-22 Wed 15:46]
+
+** TODO 自动生成 title 组合
 
 
+* 遇到的问题
+** 开发机网速太慢, 爬虫效率低, 模型拷贝到本地要 5 个小时
+
+
+
+
+
+* 图片创意
+** 创意结构
+*** 图片
+- 数据库 optimus advertiser_creative_props 库
+- logo url ie, http://f1.p0y.cn/dcl/14473/logo-334-35-a35d655c.jpg
+
+*** 颜色
+- 根据数据库表 name 字段, 有 borderColor/btnBgColor/priceColor 等
+
+** TODO 颜色分类
+* 遇到的问题
