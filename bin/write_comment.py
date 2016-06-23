@@ -3,6 +3,7 @@ import sys
 sys.path.append('..')
 import os
 import jieba
+import pandas as pd
 from utils import myutils
 import gensim
 import numpy as np
@@ -170,9 +171,24 @@ def write_comment():
 
 
 
+nominal_freq_words = "../data/360W词性词频词库.txt"
+def get_words_by_nominal(nominal, seed_word=[]):
+
+    words = pd.read_csv(nominal_freq_words,
+                        header=None,
+                        sep="\t")
+    
+    words.columns = ["word", "nominal", "freq"]
+
+    res = word_data.loc[word_data.nominal == nominal]
+    return res
+
+
+
+
 if __name__ == '__main__':
 
-    #seed_word = ""
+    seed_word = ""
 
     #url_path = get_url()
     #title_list = scrapy_title(url_path)
@@ -187,10 +203,9 @@ if __name__ == '__main__':
 
     for index, crawled_title in enumerate(title_json_list):
         crawled_title.update({'seg': seg_zh_line(crawled_title['title'])})
-
-
-    embed_model = train_word2vec_model(seg_list)
+    
+    #embed_model = train_word2vec_model(seg_list)
     vector_file = "../data/all_vector"
     model = gensim.models.Word2Vec.load_word2vec_format(vector_file, binary=False)
 
-    sim_words = get_sim_words(word, model)
+    sim_words = get_sim_words(seed_word, model)
