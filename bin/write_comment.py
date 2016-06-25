@@ -171,19 +171,28 @@ def write_comment():
 
 
 
-nominal_freq_words = "../data/360W词性词频词库.txt"
-def get_words_by_nominal(nominal, seed_word=[]):
 
-    words = pd.read_csv(nominal_freq_words,
-                        header=None,
-                        sep="\t")
-    
+def get_words_by_nominal(nominal, nominal_dict, words):
+
     words.columns = ["word", "nominal", "freq"]
-
-    res = word_data.loc[word_data.nominal == nominal]
+    res = words.loc[words.nominal == nominal]
     return res
 
 
+
+def load_nominal_dict(nominal_path):
+
+    nominal_dict = {}
+    fd = open(nominal_path, 'r')
+    for line in fd:
+        line = line.strip()
+        arr = line.split()
+        if len(arr) < 2: continue
+        nominal = arr[0]
+        mean = " ".join(arr[1:])
+        nominal_dict[nominal] = mean
+
+    return nominal_dict
 
 
 if __name__ == '__main__':
@@ -203,9 +212,17 @@ if __name__ == '__main__':
 
     for index, crawled_title in enumerate(title_json_list):
         crawled_title.update({'seg': seg_zh_line(crawled_title['title'])})
-    
+
     #embed_model = train_word2vec_model(seg_list)
     vector_file = "../data/all_vector"
     model = gensim.models.Word2Vec.load_word2vec_format(vector_file, binary=False)
 
     sim_words = get_sim_words(seed_word, model)
+
+    nominal_freq_words = "../data/360W词性词频词库.txt"
+    words = pd.read_csv(nominal_freq_words,
+                        header=None,
+                        sep="\t")
+
+    nominal_path = "../data/nominal_dict"
+    get_words_by_nominal()
